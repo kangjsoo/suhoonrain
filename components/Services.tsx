@@ -118,8 +118,8 @@ const Services: React.FC = () => {
                <div 
                  className="w-full h-full bg-cover bg-center bg-slate-200 transition-transform duration-700 hover:scale-105"
                  style={{ 
-                   /* Technician cleaning AC unit */
-                   backgroundImage: 'url("https://images.unsplash.com/photo-1621905251918-48416bd8575a?auto=format&fit=crop&q=80&w=2000")' 
+                   /* Update to user provided CEO image */
+                   backgroundImage: 'url("/ceo.png")' 
                  }}
                  role="img"
                  aria-label="시스템 에어컨 분해 세척 이미지"

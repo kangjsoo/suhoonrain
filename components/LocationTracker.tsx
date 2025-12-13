@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MapPin, Search, Navigation, User, PhoneCall, Clock, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, Search, Navigation, User, PhoneCall, Clock, Loader2, Map as MapIcon, ExternalLink, AlertTriangle } from 'lucide-react';
+import L from 'leaflet';
 
 const PipeLogo = ({ className }: { className?: string }) => (
   <img 
@@ -9,20 +10,183 @@ const PipeLogo = ({ className }: { className?: string }) => (
   />
 );
 
+interface LocationState {
+  lat: number;
+  lng: number;
+}
+
 const LocationTracker: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'active'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'active' | 'error'>('idle');
+  const [userLocation, setUserLocation] = useState<LocationState | null>(null);
+  const [techLocation, setTechLocation] = useState<LocationState | null>(null);
+  const [distanceInfo, setDistanceInfo] = useState({ km: '0', time: '0' });
+  
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const techMarkerRef = useRef<L.Marker | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) return;
     
     setStatus('loading');
-    // Simulate API call
-    setTimeout(() => {
-      setStatus('active');
-    }, 1500);
+    
+    if (!navigator.geolocation) {
+      setStatus('error');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        
+        // Initial tech location: Random offset approx 1.5km away
+        // 0.01 degrees is roughly 1.1km
+        const offsetLat = (Math.random() > 0.5 ? 1 : -1) * (0.01 + Math.random() * 0.005);
+        const offsetLng = (Math.random() > 0.5 ? 1 : -1) * (0.01 + Math.random() * 0.005);
+        
+        setTechLocation({
+          lat: latitude + offsetLat,
+          lng: longitude + offsetLng
+        });
+
+        setStatus('active');
+      },
+      (error) => {
+        console.error("Location error:", error);
+        setStatus('error');
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
   };
+
+  // Simulation of technician movement
+  useEffect(() => {
+    if (status !== 'active' || !userLocation) return;
+
+    const interval = setInterval(() => {
+      setTechLocation(prev => {
+        if (!prev) return null;
+        
+        // Move towards user
+        const latDiff = userLocation.lat - prev.lat;
+        const lngDiff = userLocation.lng - prev.lng;
+        
+        // Stop if arrived (very close)
+        if (Math.abs(latDiff) < 0.00005 && Math.abs(lngDiff) < 0.00005) {
+          return prev;
+        }
+
+        // Move 2% of the remaining distance per tick (smooth deceleration/approach)
+        // or constant speed. Let's do constantish speed for realism, but simplified.
+        const speedFactor = 0.05; 
+        
+        return {
+          lat: prev.lat + latDiff * speedFactor,
+          lng: prev.lng + lngDiff * speedFactor
+        };
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [status, userLocation]);
+
+  // Map Initialization and Updates
+  useEffect(() => {
+    // 1. Initialize Map
+    if (status === 'active' && mapContainerRef.current && !mapInstanceRef.current && userLocation) {
+      const map = L.map(mapContainerRef.current, {
+        zoomControl: false,
+        attributionControl: false
+      }).setView([userLocation.lat, userLocation.lng], 14);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      
+      mapInstanceRef.current = map;
+    }
+
+    // 2. Update Markers & Info
+    if (status === 'active' && mapInstanceRef.current && userLocation && techLocation) {
+      const map = mapInstanceRef.current;
+
+      // User Marker
+      const userIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+          <div class="relative w-4 h-4">
+            <div class="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-75"></div>
+            <div class="relative w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-lg"></div>
+            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap">고객님</div>
+          </div>
+        `,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
+      if (!userMarkerRef.current) {
+        userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon }).addTo(map);
+      } else {
+        userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
+      }
+
+      // Tech Marker
+      const techIcon = L.divIcon({
+        className: 'custom-div-icon',
+        html: `
+          <div class="relative w-14 h-14 -mt-7 -ml-7 transition-all duration-300">
+            <div class="absolute inset-0 bg-sky-500/20 rounded-full animate-pulse"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full border-2 border-[#0056b3] flex items-center justify-center shadow-lg overflow-hidden">
+               <img src="/ceo.png" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/logo.png'" />
+            </div>
+             <div class="absolute -top-9 left-1/2 -translate-x-1/2 bg-[#0056b3] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap z-50">강정수 대표</div>
+          </div>
+        `,
+        iconSize: [56, 56],
+        iconAnchor: [28, 28]
+      });
+
+      if (!techMarkerRef.current) {
+        techMarkerRef.current = L.marker([techLocation.lat, techLocation.lng], { icon: techIcon }).addTo(map);
+        // Initial bounds fit
+        const bounds = L.latLngBounds(
+          [userLocation.lat, userLocation.lng],
+          [techLocation.lat, techLocation.lng]
+        );
+        map.fitBounds(bounds, { padding: [100, 100], maxZoom: 16 });
+      } else {
+        techMarkerRef.current.setLatLng([techLocation.lat, techLocation.lng]);
+        techMarkerRef.current.setIcon(techIcon); // Update icon to ensure clean render
+      }
+
+      // Calculate Distance & Time
+      const distMeters = map.distance(
+        [userLocation.lat, userLocation.lng],
+        [techLocation.lat, techLocation.lng]
+      );
+      
+      // Calculate eta: assume 30km/h average speed in city = 500m/min
+      const speedMetersPerMin = 400; 
+      const etaMins = Math.ceil(distMeters / speedMetersPerMin);
+      
+      setDistanceInfo({
+        km: (distMeters / 1000).toFixed(1),
+        time: etaMins.toString()
+      });
+    }
+
+    // Cleanup when component unmounts or status changes away from active
+    return () => {
+      if (status !== 'active' && mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        userMarkerRef.current = null;
+        techMarkerRef.current = null;
+      }
+    };
+  }, [status, userLocation, techLocation]);
 
   return (
     <section id="location" className="py-24 bg-slate-50 relative overflow-hidden">
@@ -32,7 +196,7 @@ const LocationTracker: React.FC = () => {
             <MapPin className="w-6 h-6 text-green-600" />
           </div>
           <h2 className="text-3xl font-bold text-slate-900 mb-3">실시간 기사 위치 확인</h2>
-          <p className="text-slate-500">예약하신 전화번호를 입력하시면 담당 기사의 현재 위치를 확인하실 수 있습니다.</p>
+          <p className="text-slate-500">예약하신 전화번호를 입력하시면 고객님의 현재 위치와 담당 기사의 위치를 확인하실 수 있습니다.</p>
         </div>
 
         <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
@@ -66,33 +230,50 @@ const LocationTracker: React.FC = () => {
                 </button>
               </form>
 
-              {status === 'active' && (
+              {status === 'active' && userLocation && (
                 <div className="animate-fadeIn mt-auto">
                   <div className="bg-blue-50 p-4 rounded-2xl mb-4 border border-blue-100">
                     <div className="flex items-center mb-3">
-                      <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm mr-3 border border-blue-100">
-                        <User className="w-5 h-5 text-[#0056b3]" />
+                      <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm mr-3 border border-blue-100 overflow-hidden relative">
+                        <img 
+                          src="/ceo.png" 
+                          alt="강정수 대표" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display='none';
+                            e.currentTarget.parentElement?.querySelector('.fallback-icon')?.classList.remove('hidden');
+                          }} 
+                        />
+                        <User className="fallback-icon hidden w-6 h-6 text-[#0056b3] absolute" />
                       </div>
                       <div>
                         <p className="text-xs text-slate-500 font-bold">담당 엔지니어</p>
                         <p className="text-slate-900 font-bold">강정수 대표</p>
                       </div>
                     </div>
-                    <div className="flex space-x-2">
-                       <a href="tel:010-4647-0990" className="flex-1 bg-white py-2 rounded-lg text-xs font-bold text-slate-700 shadow-sm flex items-center justify-center hover:bg-blue-100 transition-colors border border-blue-100">
-                         <PhoneCall className="w-3 h-3 mr-1" /> 전화 연결
-                       </a>
-                    </div>
+                    
+                    <a 
+                      href={`https://m.map.naver.com/map.naver?lat=${userLocation.lat}&lng=${userLocation.lng}&dlevel=12`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full bg-[#03C75A] hover:bg-[#02b351] text-white py-2.5 rounded-lg text-sm font-bold shadow-sm flex items-center justify-center transition-colors mb-2"
+                    >
+                      <span className="mr-1 font-extrabold">N</span> 네이버 지도로 보기
+                    </a>
+                    
+                    <a href="tel:010-4647-0990" className="w-full bg-white py-2.5 rounded-lg text-sm font-bold text-slate-700 shadow-sm flex items-center justify-center hover:bg-blue-50 transition-colors border border-blue-100">
+                       <PhoneCall className="w-4 h-4 mr-2" /> 전화 연결
+                    </a>
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-3 bg-slate-50 p-4 rounded-2xl">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500 flex items-center"><Navigation className="w-4 h-4 mr-2" /> 현재 거리</span>
-                      <span className="font-bold text-[#0056b3]">2.3km</span>
+                      <span className="font-bold text-[#0056b3]">약 {distanceInfo.km}km</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-500 flex items-center"><Clock className="w-4 h-4 mr-2" /> 도착 예정</span>
-                      <span className="font-bold text-[#0056b3]">약 12분 후</span>
+                      <span className="font-bold text-[#0056b3]">약 {distanceInfo.time}분 후</span>
                     </div>
                   </div>
                 </div>
@@ -100,71 +281,54 @@ const LocationTracker: React.FC = () => {
             </div>
 
             {/* Right Panel: Map Visualization */}
-            <div className="md:col-span-2 relative bg-slate-100 overflow-hidden">
+            <div className="md:col-span-2 relative bg-slate-100 overflow-hidden min-h-[400px]">
               {status === 'active' ? (
-                <div className="absolute inset-0 animate-fadeIn">
-                   {/* Simulated Map Background with CSS Grid Pattern */}
-                   <div className="absolute inset-0 bg-slate-50 opacity-60" style={{
-                     backgroundImage: 'linear-gradient(#cbd5e1 1px, transparent 1px), linear-gradient(to right, #cbd5e1 1px, #f1f5f9 1px)',
-                     backgroundSize: '40px 40px'
-                   }}></div>
+                <div className="w-full h-full animate-fadeIn relative">
+                   {/* Leaflet Map Container */}
+                   <div ref={mapContainerRef} className="w-full h-full z-0" />
                    
-                   {/* Map Overlay Elements */}
-                   <div className="absolute inset-0 bg-blue-900/5"></div>
-                   
-                   {/* Road Network Simulation */}
-                    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
-                      <path d="M -50 200 L 800 250" stroke="white" strokeWidth="12" fill="none" />
-                      <path d="M 200 -50 L 250 800" stroke="white" strokeWidth="12" fill="none" />
-                      <path d="M 100 100 L 500 500" stroke="white" strokeWidth="8" fill="none" />
-                    </svg>
-                   
-                   {/* Route Line (Simulated) */}
-                   <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.3))' }}>
-                     <path d="M 200 400 Q 300 300 450 250 T 600 150" stroke="#0056b3" strokeWidth="4" fill="none" strokeDasharray="10 5" className="animate-pulse" />
-                   </svg>
-
-                   {/* User Pin */}
-                   <div className="absolute bottom-[20%] left-[25%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                     <div className="bg-white px-3 py-1.5 rounded-full shadow-lg mb-2 text-xs font-bold text-slate-800 whitespace-nowrap">고객님 위치</div>
-                     <div className="w-4 h-4 bg-slate-900 rounded-full border-4 border-white shadow-xl relative">
-                        <div className="absolute inset-0 bg-slate-900 rounded-full animate-ping opacity-20"></div>
-                     </div>
-                   </div>
-
-                   {/* Technician Pin (Animated - Suhoon Line Logo) */}
-                   <div className="absolute top-[30%] right-[20%] transform -translate-x-1/2 -translate-y-1/2 z-20 animate-bounce-slow">
-                      <div className="relative">
-                        <div className="w-16 h-16 bg-[#0056b3]/20 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-ping"></div>
-                        <div className="w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center border-2 border-[#0056b3] relative z-10">
-                           <PipeLogo className="w-8 h-8" />
-                        </div>
-                        <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-[#0056b3] text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap after:content-[''] after:absolute after:top-full after:left-1/2 after:-translate-x-1/2 after:border-4 after:border-transparent after:border-t-[#0056b3]">
-                          수훈라인 이동중
-                        </div>
-                      </div>
-                   </div>
-                   
-                   {/* Watermark Logo */}
-                   <div className="absolute top-6 right-6 opacity-80 bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm border border-white/50 flex items-center space-x-2">
+                   {/* Overlay Watermark */}
+                   <div className="absolute top-4 right-4 z-[400] bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg border border-slate-100 flex items-center space-x-2 pointer-events-none">
                      <PipeLogo className="w-4 h-4" />
-                     <span className="text-xs font-bold text-[#0056b3] tracking-tight">수훈라인 관제중</span>
+                     <span className="text-xs font-bold text-[#0056b3]">실시간 관제중</span>
                    </div>
                 </div>
+              ) : status === 'error' ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-50">
+                  <div className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg border border-red-100 max-w-xs animate-fadeIn">
+                    <div className="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
+                      <AlertTriangle className="w-10 h-10 text-red-500" />
+                    </div>
+                    <h4 className="text-slate-900 font-bold mb-2 text-lg">위치 확인 실패</h4>
+                    <p className="text-slate-500 font-medium text-sm leading-relaxed mb-6 break-keep">
+                      위치 정보를 가져올 수 없습니다.<br/>
+                      브라우저 설정에서 위치 권한을 허용해주세요.
+                    </p>
+                    <button 
+                      onClick={() => setStatus('idle')}
+                      className="w-full bg-slate-900 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-black transition-colors"
+                    >
+                      다시 시도하기
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-100" style={{
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-50" style={{
                     backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
                     backgroundSize: '20px 20px'
                 }}>
                   <div className="text-center p-8 bg-white/90 backdrop-blur-sm rounded-3xl shadow-lg border border-slate-100 max-w-xs">
                     <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-inner">
-                      <PipeLogo className="w-10 h-10" />
+                      <MapIcon className="w-10 h-10 text-[#0056b3] opacity-80" />
                     </div>
-                    <h4 className="text-slate-900 font-bold mb-1 text-lg">수훈라인 관제 시스템</h4>
-                    <p className="text-slate-500 font-medium text-sm leading-relaxed">
-                      조회 버튼을 누르시면<br/>
-                      기사님 위치가 지도에 표시됩니다.
+                    <h4 className="text-slate-900 font-bold mb-1 text-lg">위치 조회 대기중</h4>
+                    <p className="text-slate-500 font-medium text-sm leading-relaxed mb-4">
+                      전화번호 뒷자리를 입력하고<br/>
+                      위치 권한을 허용해주세요.
                     </p>
+                    <div className="text-xs text-slate-400 bg-slate-100 py-2 px-3 rounded-lg">
+                      * 고객님의 현재 위치 기반으로<br/>가장 가까운 기사를 찾습니다.
+                    </div>
                   </div>
                 </div>
               )}

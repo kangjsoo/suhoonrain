@@ -6,6 +6,7 @@
     <title>수훈라인 - 프리미엄 홈 케어</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
       body {
         font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
@@ -39,6 +40,17 @@
       .animate-bounce-slow {
         animation: bounce-slow 3s infinite;
       }
+      /* Map specific styles */
+      .leaflet-container {
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        background: #f8fafc;
+      }
+      .custom-div-icon {
+        background: transparent;
+        border: none;
+      }
     </style>
   <script type="importmap">
 {
@@ -47,7 +59,8 @@
     "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "leaflet": "https://esm.sh/leaflet@1.9.4"
   }
 }
 </script>

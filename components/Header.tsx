@@ -2,11 +2,57 @@ import React, { useState, useEffect } from 'react';
 import { Sparkles, Menu, X, MapPin } from 'lucide-react';
 
 const PipeLogo = ({ className }: { className?: string }) => (
-  <img 
-    src="/logo.png" 
-    alt="수훈라인 로고" 
-    className={`${className} object-contain`} 
-  />
+  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="logoBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#1565C0" />
+        <stop offset="100%" stopColor="#0D47A1" />
+      </linearGradient>
+      <linearGradient id="logoCyan" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#29B6F6" />
+        <stop offset="100%" stopColor="#0288D1" />
+      </linearGradient>
+    </defs>
+    
+    {/* Left Part ('h' shape - Dark Blue) */}
+    {/* Stem */}
+    <path 
+      d="M28 18 V82" 
+      stroke="url(#logoBlue)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    {/* Arch connecting to middle */}
+    <path 
+      d="M28 50 C28 28 50 28 50 53" 
+      stroke="url(#logoBlue)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    
+    {/* Right Part ('u' shape - Light Blue) */}
+    {/* Bowl connecting from middle to right stem */}
+    <path 
+      d="M50 47 C50 72 72 72 72 50 V18" 
+      stroke="url(#logoCyan)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    
+    {/* Flanges (Decorations) */}
+    <path d="M19 18 H37" stroke="#0D47A1" strokeWidth="4" strokeLinecap="round" />
+    <path d="M19 82 H37" stroke="#0D47A1" strokeWidth="4" strokeLinecap="round" />
+    <path d="M63 18 H81" stroke="#0288D1" strokeWidth="4" strokeLinecap="round" />
+
+    {/* Center Joint Ring */}
+    <path 
+      d="M48 50 Q50 52 52 50" 
+      stroke="rgba(255,255,255,0.4)" 
+      strokeWidth="2" 
+      fill="none" 
+    />
+    <rect x="41" y="46" width="18" height="8" rx="2" fill="#0277BD" fillOpacity="0.2" />
+  </svg>
 );
 
 const Header: React.FC = () => {

@@ -8,9 +8,9 @@ const StickyCTA: React.FC = () => {
         <a href="tel:010-4647-0990" className="flex-1 bg-[#0056b3] text-white rounded-full py-3.5 flex items-center justify-center font-bold text-sm shadow-md transition-transform active:scale-95">
           <Phone className="w-4 h-4 mr-2" /> 전화 상담
         </a>
-        <button className="flex-1 text-slate-800 rounded-full py-3.5 flex items-center justify-center font-bold text-sm transition-colors hover:bg-slate-50">
+        <a href="sms:010-4647-0990?body=상담 문의드립니다." className="flex-1 text-slate-800 rounded-full py-3.5 flex items-center justify-center font-bold text-sm transition-colors hover:bg-slate-50">
           <MessageCircle className="w-4 h-4 mr-2" /> 문자 예약
-        </button>
+        </a>
       </div>
     </div>
   );

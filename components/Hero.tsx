@@ -39,16 +39,24 @@ const Hero: React.FC = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-          <button className="group relative px-8 py-4 bg-[#0056b3] hover:bg-[#004494] text-white rounded-full font-bold text-lg transition-all shadow-[0_0_40px_-10px_rgba(0,86,179,0.5)] hover:shadow-[0_0_60px_-15px_rgba(0,86,179,0.6)] overflow-hidden">
+          <a 
+            href="tel:010-4647-0990" 
+            className="group relative px-8 py-4 bg-[#0056b3] hover:bg-[#004494] text-white rounded-full font-bold text-lg transition-all shadow-[0_0_40px_-10px_rgba(0,86,179,0.5)] hover:shadow-[0_0_60px_-15px_rgba(0,86,179,0.6)] overflow-hidden flex items-center justify-center cursor-pointer"
+          >
             <span className="relative z-10 flex items-center">
               <Phone className="w-5 h-5 mr-2" /> 긴급 출동 요청
             </span>
             <div className="absolute inset-0 bg-white/20 transform -skew-x-12 translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
-          </button>
+          </a>
 
-          <button className="px-8 py-4 bg-white/5 hover:bg-white/15 backdrop-blur-sm border border-white/30 text-white rounded-full font-bold text-lg transition-all flex items-center">
+          <a 
+            href="https://booking.naver.com/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="px-8 py-4 bg-white/5 hover:bg-white/15 backdrop-blur-sm border border-white/30 text-white rounded-full font-bold text-lg transition-all flex items-center justify-center cursor-pointer"
+          >
             <Calendar className="w-5 h-5 mr-2" /> 온라인 예약
-          </button>
+          </a>
         </div>
       </div>
 

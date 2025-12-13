@@ -1,11 +1,44 @@
 import React from 'react';
 
 const PipeLogo = ({ className }: { className?: string }) => (
-  <img 
-    src="/logo.png" 
-    alt="수훈라인 로고" 
-    className={`${className} object-contain`} 
-  />
+  <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="footerLogoBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#1565C0" />
+        <stop offset="100%" stopColor="#0D47A1" />
+      </linearGradient>
+      <linearGradient id="footerLogoCyan" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#29B6F6" />
+        <stop offset="100%" stopColor="#0288D1" />
+      </linearGradient>
+    </defs>
+    
+    <path 
+      d="M28 18 V82" 
+      stroke="url(#footerLogoBlue)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    <path 
+      d="M28 50 C28 28 50 28 50 53" 
+      stroke="url(#footerLogoBlue)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    
+    <path 
+      d="M50 47 C50 72 72 72 72 50 V18" 
+      stroke="url(#footerLogoCyan)" 
+      strokeWidth="15" 
+      strokeLinecap="round" 
+    />
+    
+    <path d="M19 18 H37" stroke="#0D47A1" strokeWidth="4" strokeLinecap="round" />
+    <path d="M19 82 H37" stroke="#0D47A1" strokeWidth="4" strokeLinecap="round" />
+    <path d="M63 18 H81" stroke="#0288D1" strokeWidth="4" strokeLinecap="round" />
+    
+    <rect x="41" y="46" width="18" height="8" rx="2" fill="#0277BD" fillOpacity="0.2" />
+  </svg>
 );
 
 const Footer: React.FC = () => {

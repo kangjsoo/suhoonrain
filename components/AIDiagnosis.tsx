@@ -170,9 +170,12 @@ const AIDiagnosis: React.FC = () => {
                       </div>
                     </div>
 
-                    <button className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1 flex items-center justify-center">
+                    <a 
+                      href="tel:010-4647-0990"
+                      className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 transition-all transform hover:-translate-y-1 flex items-center justify-center"
+                    >
                       <Phone className="w-4 h-4 mr-2" /> 이 결과로 긴급 출동 요청
-                    </button>
+                    </a>
                   </div>
                 ) : (
                   /* Input View */
